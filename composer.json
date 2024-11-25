@@ -8,13 +8,13 @@
     },
     "autoload": {
         "psr-4": {
-            "YourVendor\\MakeResource\\": "src/"
+            "mrsoneri\\MakeResource\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "YourVendor\\MakeResource\\Providers\\MakeResourceServiceProvider"
+                "mrsoneri\\MakeResource\\Providers\\MakeResourceServiceProvider"
             ]
         }
     },
