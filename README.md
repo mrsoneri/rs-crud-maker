@@ -6,7 +6,7 @@ This package provides a command to generate resource files (repositories, servic
 
 1. Require the package via Composer:
    ```bash
-   composer require your-vendor/laravel-make-resource
+   composer require mrsoneri/laravel-make-resource
    ```
 
 2. Publish the configuration file:
