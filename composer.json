@@ -1,0 +1,23 @@
+{
+    "name": "your-vendor/laravel-make-resource",
+    "description": "A Laravel package to generate resource files (repositories, services, controllers, etc.)",
+    "type": "library",
+    "require": {
+        "php": "^8.0",
+        "laravel/framework": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "YourVendor\\MakeResource\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "YourVendor\\MakeResource\\Providers\\MakeResourceServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "license": "MIT"
+}
