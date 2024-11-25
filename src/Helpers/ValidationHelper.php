@@ -1,6 +1,6 @@
 <?php
 
-namespace YourVendor\MakeResource\Helpers;
+namespace MrSoneri\MakeResource\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;

@@ -1,9 +1,9 @@
 <?php
 
-namespace YourVendor\MakeResource\Providers;
+namespace MrSoneri\MakeResource\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use YourVendor\MakeResource\Commands\MakeResourceFiles;
+use MrSoneri\MakeResource\Commands\MakeResourceFiles;
 
 class MakeResourceServiceProvider extends ServiceProvider
 {
