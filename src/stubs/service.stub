@@ -1,0 +1,38 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Models\{{ capsName }};
+use App\Repositories\Contract\{{ nameSpaceOfClass }}\{{ capsName }}RepositoryInterface;
+
+class {{ capsName }}Service
+{
+    public function __construct(protected {{ capsName }}RepositoryInterface ${{ name }}Repository, public {{ capsName }} $model) {}
+
+    public function retrieve{{ pluralName }}($request)
+    {
+        return $this->{{ name }}Repository
+            ->retrieve{{ pluralName }}($request)
+            ->get();
+    }
+
+    public function create{{ capsName }}($request)
+    {
+        return $this->{{ name }}Repository->create($request);
+    }
+
+    public function get{{ capsName }}ById($id)
+    {
+        return $this->model->where('id', $id)->exists() ? $this->{{ name }}Repository->show($id) : false;
+    }
+
+    public function update{{ capsName }}($id, $request)
+    {
+        return $this->model->where('id', $id)->exists() ? $this->{{ name }}Repository->update($id, $request) : false;
+    }
+
+    public function delete{{ capsName }}($id)
+    {
+        return $this->model->where('id', $id)->exists() ? $this->{{ name }}Repository->delete($id) : false;
+    }
+}

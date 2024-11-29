@@ -1,0 +1,74 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\{{ nameSpaceOfClass }}\{{ capsName }}CreateRequest;
+use App\Http\Requests\{{ nameSpaceOfClass }}\{{ capsName }}UpdateRequest;
+use App\Services\{{ nameSpaceOfClass }}\{{ capsName }}Service;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+
+class {{ capsName }}Controller extends Controller
+{
+    public function __construct(
+    protected {{ capsName }}Service ${{ name }}Service,
+    protected Request $request) {}
+
+    public function index()
+    {
+        try {
+            $data = $this->{{ name }}Service->retrieve{{ pluralName }}($this->request);
+
+            return $data ? 
+            $this->jsonResponse(true, Response::HTTP_OK, $data, [],'{{ capsName }} data loaded successfully.') :
+            $this->jsonResponse(true, Response::HTTP_OK, [], [],'{{ capsName }} data not found.');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function store({{ capsName }}CreateRequest $request)
+    {
+        try {
+            $data = $this->{{ name }}Service->create{{ capsName }}($request);
+            return $data ? 
+            $this->jsonResponse(true, Response::HTTP_CREATED, $data,[], [], '{{ capsName }} created successfully.') 
+            : $this->jsonResponse(true, Response::HTTP_OK, [], [], 'Failed to create {{ capsName }}.');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function show(string $id)
+    {
+        try {
+            $data = $this->{{ name }}Service->get{{ capsName }}ById($id);
+            return $data ? 
+            $this->jsonResponse(true, Response::HTTP_OK, $data, [], [], '{{ capsName }} details fetched successfully.') 
+            : $this->jsonResponse(true, Response::HTTP_OK, [], [], '{{ capsName }} not found.');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function update({{ capsName }}UpdateRequest $request,string $id)
+    {
+        try {
+            $success = $this->{{ name }}Service->update{{ capsName }}($id, $request);
+            return $this->jsonResponse($success, Response::HTTP_OK, [], [], $success ? '{{ capsName }} updated successfully.' : '{{ capsName }} not found.');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function destroy(string $id)
+    {
+        try {
+            $success = $this->{{ name }}Service->delete{{ capsName }}($id);
+            return $this->jsonResponse($success, Response::HTTP_OK, [], [], $success ? '{{ capsName }} deleted successfully.' : '{{ capsName }} not found.');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+}

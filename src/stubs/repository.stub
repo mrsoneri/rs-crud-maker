@@ -1,0 +1,37 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Models\{{ capsName }};
+use App\Repositories\Contract\{{ nameSpaceOfClass }}\{{ capsName }}RepositoryInterface;
+
+class {{ capsName }}Repository implements {{ capsName }}RepositoryInterface
+{
+    public function retrieve{{ pluralName }}($request)
+    {
+        $query = {{ capsName }}::query();
+        return $query;
+    }
+
+    public function create($request)
+    {
+        return {{ capsName }}::create($request->validated());
+    }
+
+    public function show($id)
+    {
+        return {{ capsName }}::findRecord($id);
+    }
+
+    public function update($id, $request)
+    {
+        ${{ name }} = {{ capsName }}::findRecord($id);
+        return ${{ name }}->update($request->validated());
+    }
+
+    public function delete($id)
+    {
+        ${{ name }} = {{ capsName }}::findRecord($id);
+        return ${{ name }}->delete();
+    }
+}

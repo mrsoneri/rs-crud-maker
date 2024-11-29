@@ -1,241 +1,426 @@
 <?php
 
-namespace MrSoneri\MakeResource\Commands;
+namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Pluralizer;
 use Illuminate\Support\Str;
 
 class MakeResourceFiles extends Command
 {
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
     protected $signature = 'make:resource {name}';
 
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
     protected $description = 'Create related files for a new resource';
 
-    public $common = 'app/';
+    /**
+     * Base app path.
+     *
+     * @var string
+     */
+    protected $basePath = 'app/';
 
-    public $apiVersion = 'Api/V1';
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
+    /**
+     * Execute the console command.
+     */
     public function handle()
     {
+        // Step 1: Get the 'name' argument
         $name = $this->argument('name');
+        $formattedName = $this->formatName($name);
+        $providerPath = app_path('Providers/RepositoryServiceProvider.php');
 
-        $this->info('Creating resource files...');
-        $repositoryPathInterface = $this->common . 'Repositories/' . $this->apiVersion . '/Contract/' . $name;
-        $repositoryPath = $this->common . 'Repositories/' . $this->apiVersion . '/Eloquent/' . $name;
-        $servicePath = $this->common . 'Services/' . $this->apiVersion . '/' . $name;
-        $transformerPath = $this->common . 'Transformers/' . $this->apiVersion . '/' . $name;
-        $controllerPath = $this->common . 'Http/Controllers/' . $this->apiVersion . '/' . $name;
-        $requestPath = $this->common . 'Http/Requests/' . $this->apiVersion . '/' . $name;
+        // // Define paths
+        $controllerPath = $this->basePath . 'Http/Controllers/' . $formattedName;
+        $servicePath = $this->basePath . 'Services/' . $formattedName;
+        $repositoryPathInterface = $this->basePath . 'Repositories/Contract/' . $formattedName;
+        $repository = $this->basePath . 'Repositories/Eloquent/' . $formattedName;
+        $requestPath = $this->basePath . 'Http/Requests/' . $formattedName;
 
-        // $this->createRepositoryInterface($name, $repositoryPathInterface);
-        // $this->createRepository($name, $repositoryPath);
-        // $this->createService($name, $servicePath);
-        // $this->createTransformer($name, $transformerPath);
-        $this->createController($name, $controllerPath);
-        // $this->generateRequestClassesFromSchema(Pluralizer::plural(strtolower(basename($name))), $name, $requestPath);
-
-        $this->info('Resource files created successfully.');
-    }
-
-    protected function createRepositoryInterface($name, $path)
-    {
-        $this->ensureDirectoryExists($path);
-        $name = basename($name);
-        $fullPath = base_path("$path/{$name}RepositoryInterface.php");
-        $namespace = str_replace('/', '\\', ucwords($path));
-        $capsName = ucfirst($name);
-        $name = strtolower($name);
-        $interfaceTemplate = "<?php\n\nnamespace {$namespace};\n\ninterface {$capsName}RepositoryInterface\n{\n    /**\n     * get{$capsName}s\n     *\n     * @param mixed \$filters\n     * @param mixed \$searchStr\n     * @param mixed \$sortField\n     * @param mixed \$sortDirection\n     */\n    public function get{$capsName}s(\$filters, \$searchStr, \$sortField, \$sortDirection);\n\n    public function create(\$request);\n\n    public function show(\$id);\n\n    public function update(\$id, \$request);\n\n    public function delete(\$id);\n}\n";
-        // $interfaceTemplate = "<?php\n\nnamespace$namespace;\n\ninterface {$capsName}RepositoryInterface\n{\n    public function getAll();\n    public function create(array \$data);\n    public function update(\$id, array \$data);\n    public function find(\$id);\n    public function delete(\$id);\n}\n";
-        File::put($fullPath, $interfaceTemplate);
-    }
-
-    protected function createRepository($name, $path)
-    {
-        $this->ensureDirectoryExists($path);
-        $name = basename($name);
-        $fullPath = base_path("$path/{$name}Repository.php");
-        $namespace = str_replace('/', '\\', ucwords($path));
-        $capsName = ucfirst($name);
-        $name = strtolower($name);
-        $repositoryTemplate = "<?php\n\nnamespace {$namespace};\n\nuse App\Models\\{$capsName}\\{$capsName};\nuse App\Repositories\Api\V1\Contract\\{$capsName}\\{$capsName}RepositoryInterface;\nuse Illuminate\Support\Facades\DB;\n\nclass {$capsName}Repository implements {$capsName}RepositoryInterface\n{\n    public function get{$capsName}s(\$filters, \$searchStr, \$sortField, \$sortDirection)\n    {\n        \$query = {$capsName}::query();\n        \$this->applySearch(\$query, \$searchStr);\n        \$query->orderBy(\$sortField, \$sortDirection);\n        return \$query;\n    }\n\n    protected function applySearch(\$query, \$searchStr)\n    {\n        if (\$searchStr !== '') {\n            \$query->where(function (\$query) use (\$searchStr) {\n                \$query->where('{$name}.name', 'like', '%'.\$searchStr.'%');\n            });\n        }\n    }\n\n    public function create(\$request)\n    {\n        return {$capsName}::create(\$request->validated());\n    }\n\n    public function show(\$id)\n    {\n        return {$capsName}::findRecord(\$id);\n    }\n\n    public function update(\$id, \$request)\n    {\n        \${$name} = {$capsName}::findRecord(\$id);\n        return \${$name}->update(\$request->validated());\n    }\n\n    public function delete(\$id)\n    {\n        \${$name} = Client::findRecord(\$id);\n        return \${$name}->delete();\n    }\n}\n";
-        File::put($fullPath, $repositoryTemplate);
-    }
-
-    protected function createService($name, $path)
-    {
-        $this->ensureDirectoryExists($path);
-        $name = basename($name);
-        $fullPath = base_path("$path/{$name}Service.php");
-        $namespace = str_replace('/', '\\', ucwords($path));
-        $capsName = ucfirst($name);
-        $name = strtolower($name);
-        $serviceTemplate = "<?php\n\nnamespace $namespace;\n\nuse App\Models\\{$capsName}\\{$name};\nuse App\Repositories\Api\V1\Contract\\{$capsName}\\{$capsName}RepositoryInterface;\nuse Illuminate\Support\Facades\Storage;\n\nclass {$capsName}Service\n{\n    public function __construct(protected {$capsName}RepositoryInterface \${$name}Repository, public {$capsName} \$model) {}\n\n    public function get{$capsName}(\$pageSize, \$page, \${$name}Id, \$searchStr, \$sortField, \$sortDirection)\n    {\n        \$sortDirection = strtolower(\$sortDirection) === 'asc' ? 'asc' : 'desc';\n\n        return \$this->{$name}Repository\n            ->get{$capsName}(\${$name}Id, \$searchStr, \$sortField, \$sortDirection)\n            ->paginate(\$pageSize, ['*'], 'page', \$page);\n    }\n\n    public function create{$capsName}(\$request)\n    {\n        return \$this->{$name}Repository->create(\$request);\n    }\n\n    public function get{$capsName}ById(\$id)\n    {\n        return \$this->model->isRecordExists(\$id) ? \$this->{$name}Repository->show(\$id) : false;\n    }\n\n    public function update{$capsName}(\$id, \$request)\n    {\n        return \$this->model->isRecordExists(\$id) ? \$this->{$name}Repository->update(\$id, \$request) : false;\n    }\n\n    public function delete{$capsName}(\$id)\n    {\n        return \$this->model->isRecordExists(\$id) ? \$this->{$name}Repository->delete(\$id) : false;\n    }\n}\n";
-        File::put($fullPath, $serviceTemplate);
-    }
-
-    protected function createTransformer($name, $path)
-    {
-        $this->ensureDirectoryExists($path);
-        $name = basename($name);
-        $fullPaths = [
-            'create' => base_path("$path/{$name}CreateTransformer.php"),
-            'listing' => base_path("$path/{$name}ListingTransformer.php"),
-            'show' => base_path("$path/{$name}ShowTransformer.php"),
-        ];
-
-        $namespace = str_replace('/', '\\', ucwords($path));
-        $capsName = ucfirst($name);
-
-        $transformerTemplates = [
-            'create' => "<?php\n\nnamespace {$namespace};\n\nuse App\Src\Fractal\TsrAppTransformer;\n\nclass {$capsName}CreateTransformer extends TsrAppTransformer\n{\n    public function transform(\$model)\n    {\n        return [\n            // Define fields for creation\n            'id' => \$model->id,\n            // Add other fields here\n        ];\n    }\n}\n",
-            'listing' => "<?php\n\nnamespace {$namespace};\n\nuse App\Src\Fractal\TsrAppTransformer;\n\nclass {$capsName}ListingTransformer extends TsrAppTransformer\n{\n    public function transform(\$model)\n    {\n        return [\n            'id' => \$model->id,\n            // Add listing-specific fields here\n        ];\n    }\n}\n",
-            'show' => "<?php\n\nnamespace {$namespace};\n\nuse App\Src\Fractal\TsrAppTransformer;\n\nclass {$capsName}ShowTransformer extends TsrAppTransformer\n{\n    public function transform(\$model)\n    {\n        return [\n            'id' => \$model->id,\n            // Add fields for detailed view\n        ];\n    }\n}\n",
-        ];
-
-        foreach ($fullPaths as $type => $fullPath) {
-            File::put($fullPath, $transformerTemplates[$type]);
+        // // Generate files
+        $this->generateController($formattedName, $controllerPath);
+        $this->generateService($formattedName, $servicePath);
+        $this->generateRepositoryInterface($formattedName, $repositoryPathInterface);
+        $this->generateRepository($formattedName, $repository);
+        $this->generateRequest($formattedName, $requestPath);
+        if (!File::exists($providerPath)) {
+            $this->generateRepositoryServiceProvider($providerPath);
         }
     }
 
-    protected function createController($name, $path)
+    /**
+     * Format the input name to match directory conventions.
+     */
+    protected function formatName($name)
     {
-        $this->ensureDirectoryExists($path);
-        $namespacefiles = str_replace('/', '\\', ucfirst($name));
-        $name = basename($name);
-        $pluralName = Str::plural($name);
-        $fullPath = base_path("$path/{$pluralName}Controller.php");
-        $namespace = str_replace('/', '\\', ucwords($path));
-        $capsName = ucfirst($name);
-        $pluralCapsName = Str::plural($capsName);
-        $name = strtolower($name);
-        $controllerTemplate = "<?php\n\nnamespace {$namespace};\n\nuse App\Http\Controllers\Controller;\nuse App\Http\Requests\Api\V1\\{$namespacefiles}\\{$capsName}CreateRequest;\nuse App\Http\Requests\Api\V1\\{$namespacefiles}\\{$capsName}UpdateRequest;\nuse App\Services\Api\V1\\{$namespacefiles}\\{$capsName}Service;\nuse App\Services\Api\V1\Common\PaginationService;\nuse App\Transformers\Api\V1\\{$namespacefiles}\\{$capsName}CreateTransformer;\nuse App\Transformers\Api\V1\\{$namespacefiles}\\{$capsName}ListingTransformer;\nuse App\Transformers\Api\V1\\{$namespacefiles}\\{$capsName}ShowTransformer;\nuse Illuminate\Http\Request;\nuse Illuminate\Http\Response;\n\nclass {$pluralCapsName}Controller extends Controller\n{\n    public function __construct(protected {$capsName}Service \${$name}Service, protected PaginationService \$paginationService, protected Request \$request) {}\n\n    public function callAction(\$method, \$parameters)\n    {\n        \$filteredData = \$this->filteredData(\$parameters);\n        if (in_array(\$method, ['store', 'update', 'show', 'destroy'])) {\n            foreach (\$filteredData as \$key => \$value) {\n                \$validationResult = \$this->validateId(\$value);\n                if (\$validationResult !== true) {\n                    return \$validationResult;\n                }\n            }\n            if (! \$this->isValidCombinationOfIds(\$method, \$filteredData, \$this->{$name}Service->model) && in_array(\$method, ['update', 'show', 'destroy'])) {\n                return \$this->handleInvalidParams();\n            }\n        }\n        return parent::callAction(\$method, \$parameters);\n    }\n\n    public function index(Request \$request, string \${$name}Id, {$capsName}ListingTransformer \$transformer)\n    {\n        try {\n            \$pageSize = \$request->query('pageSize', config('tsr.v1.pagination.defaultPageSize'));\n            \$page = \$request->query('page', config('tsr.v1.pagination.defaultPage'));\n            \$searchStr = trim(\$request->query('search'));\n            \$sortField = \$request->query('sortField', 'created_at');\n            \$sortDirection = \$request->query('sortDirection', 'desc');\n            \${$name}Data = \$this->{$name}Service->get{$capsName}(\$pageSize, \$page, \${$name}Id, \$searchStr, \$sortField, \$sortDirection);\n            \$results = \$this->paginationService->handle(\${$name}Data, \$transformer);\n            \$data = \$results['data'] ?? [];\n            \$pagination = \$results['pagination'] ?? [];\n            return \$data ? \$this->jsonResponse(true, Response::HTTP_OK, \$data, [], trans_versioned('v1', 'client', '{$name}_data_load_success'), \$pagination) : \$this->jsonResponse(true, Response::HTTP_OK, [], [], trans_versioned('v1', 'client', '{$name}_data_not_available'));\n        } catch (\\Exception \$e) {\n            return \$this->jsonResponse(false, Response::HTTP_INTERNAL_SERVER_ERROR, null, [], trans_versioned('v1', 'common', 'something_went_wrong'));\n        }\n    }\n\n    public function store({$capsName}CreateRequest \$request, {$capsName}CreateTransformer \$transformer)\n    {\n        try {\n            \$data = \$this->{$name}Service->create{$capsName}(\$request);\n            return \$data ? \$this->transform(true, Response::HTTP_CREATED, \$data, \$transformer, [], [], trans_versioned('v1', 'client', '{$name}_create_success')) : \$this->jsonResponse(true, Response::HTTP_OK, [], [], trans_versioned('v1', 'client', '{$name}_create_failure'));\n        } catch (\\Exception \$e) {\n            return \$this->jsonResponse(false, Response::HTTP_INTERNAL_SERVER_ERROR, null, [], trans_versioned('v1', 'common', 'something_went_wrong'));\n        }\n    }\n\n    public function show(string \${$name}Id, string \$id, {$capsName}ShowTransformer \$transformer)\n    {\n        try {\n            \$validationId = \$this->validateId(\$id);\n            if (\$validationId !== true) {\n                return \$validationId;\n            }\n            \$data = \$this->{$name}Service->get{$capsName}ById(\$id);\n            return \$data ? \$this->transform(true, Response::HTTP_OK, \$data, \$transformer, [], [], trans_versioned('v1', 'client', '{$name}_show_success')) : \$this->jsonResponse(true, Response::HTTP_OK, [], [], trans_versioned('v1', 'client', '{$name}_show_failure'));\n        } catch (\\Exception \$e) {\n            return \$this->jsonResponse(false, Response::HTTP_INTERNAL_SERVER_ERROR, null, [], trans_versioned('v1', 'common', 'something_went_wrong'));\n        }\n    }\n\n    public function update({$capsName}UpdateRequest \$request, string \${$name}Id, string \$id)\n    {\n        try {\n            \$validationId = \$this->validateId(\$id);\n            if (\$validationId !== true) {\n                return \$validationId;\n            }\n            \$success = \$this->{$name}Service->update{$capsName}(\$id, \$request);\n            return \$this->jsonResponse(\$success, Response::HTTP_OK, [], [], \$success ? trans_versioned('v1', 'client', '{$name}_update_success') : trans_versioned('v1', 'client', '{$name}_update_failure'));\n        } catch (\\Exception \$e) {\n            return \$this->jsonResponse(false, Response::HTTP_INTERNAL_SERVER_ERROR, null, [], trans_versioned('v1', 'common', 'something_went_wrong'));\n        }\n    }\n\n    public function destroy(string \${$name}Id, string \$id)\n    {\n        try {\n            \$validationId = \$this->validateId(\$id);\n            if (\$validationId !== true) {\n                return \$validationId;\n            }\n            \$success = \$this->{$name}Service->delete{$capsName}(\$id);\n            return \$this->jsonResponse(\$success, Response::HTTP_OK, [], [], \$success ? trans_versioned('v1', 'client', '{$name}_delete_success') : trans_versioned('v1', 'client', '{$name}_delete_failure'));\n        } catch (\\Exception \$e) {\n            return \$this->jsonResponse(false, Response::HTTP_INTERNAL_SERVER_ERROR, null, [], trans_versioned('v1', 'common', 'something_went_wrong'));\n        }\n    }\n}\n";
-        File::put($fullPath, $controllerTemplate);
+        $segments = explode('/', $name);
+        return implode('/', array_map('ucfirst', $segments));
     }
 
-    protected function generateRequestClassesFromSchema($tableName, $modelName, $path)
+    /**
+     * Generate a controller file.
+     */
+    protected function generateController($name, $path)
     {
-        // Check if the table exists; if not, set rules to an empty string
-        if (! Schema::hasTable($tableName)) {
-            $rules = '';  // No rules if table does not exist
-        } else {
-            $columns = Schema::getColumnListing($tableName);
-            $rules = '';
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'controller.stub',
+            'Http/Controllers',
+            'Controller.php'
+        );
+    }
 
-            // Specify columns to exclude
-            $excludedColumns = [
-                'id',
-                'created_by',
-                'updated_by',
-                'deleted_by',
-                'created_at',
-                'updated_at',
-                'deleted_at',
-            ];
+    /**
+     * Generate a service file.
+     */
+    protected function generateService($name, $path)
+    {
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'service.stub',
+            'Services',
+            'Service.php'
+        );
+    }
 
-            foreach ($columns as $column) {
-                // Skip excluded columns
-                if (in_array($column, $excludedColumns)) {
-                    continue;
+    protected function generateRepositoryInterface($name, $path)
+    {
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'repository-interface.stub',
+            'Repositories/Contract',
+            'RepositoryInterface.php'
+        );
+    }
+
+    protected function generateRepository($name, $path)
+    {
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'repository.stub',
+            'Repositories/Eloquent',
+            'Repository.php'
+        );
+    }
+
+    protected function generateRulesFromTable($tableName)
+    {
+        if (!Schema::hasTable($tableName)) {
+            $this->error("Table '{$tableName}' does not exist.");
+            return [];
+        }
+
+        $columns = Schema::getColumnListing($tableName);
+        $rules = [];
+
+        foreach ($columns as $column) {
+            // Skip system fields
+            if (in_array($column, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
+                continue;
+            }
+
+            $columnDetails = DB::select(
+                'SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH, COLUMN_DEFAULT 
+                 FROM INFORMATION_SCHEMA.COLUMNS 
+                 WHERE TABLE_NAME = ? AND COLUMN_NAME = ?',
+                [$tableName, $column]
+            );
+
+            if (empty($columnDetails)) {
+                continue;
+            }
+
+            $details = $columnDetails[0];
+            $rules[$column] = $this->mapColumnToValidationRule($details, $tableName); // Pass $tableName explicitly
+        }
+
+        return $rules;
+    }
+
+    protected function mapColumnToValidationRule($details, $tableName)
+    {
+        $type = $details->DATA_TYPE;
+        $isNullable = $details->IS_NULLABLE === 'YES';
+        $maxLength = $details->CHARACTER_MAXIMUM_LENGTH;
+
+        $rule = $isNullable ? 'nullable|' : 'required|';
+
+        switch ($type) {
+            case 'varchar':
+            case 'char':
+            case 'text':
+                $rule .= 'string';
+                if ($maxLength) {
+                    $rule .= "|max:{$maxLength}";
                 }
+                break;
 
-                // Get the column type
-                $type = Schema::getColumnType($tableName, $column);
+            case 'int':
+            case 'bigint':
+            case 'smallint':
+            case 'mediumint':
+                $rule .= 'integer';
+                break;
 
-                // Check if the column is nullable
-                $isNullable = $this->isColumnNullable($tableName, $column);
+            case 'decimal':
+            case 'float':
+            case 'double':
+                $rule .= 'numeric';
+                break;
 
-                // Generate validation rules based on type and nullability
-                $rule = "'$column' => '" . $this->getValidationRules($type, $column, $isNullable) . "'";
-                $rules .= "\t\t\t$rule,\n";
+            case 'date':
+                $rule .= 'date';
+                break;
+
+            case 'datetime':
+            case 'timestamp':
+                $rule .= 'date_format:Y-m-d H:i:s';
+                break;
+
+            case 'enum':
+                // Fetch enum values using SHOW COLUMNS and the passed table name
+                $enumColumn = DB::select("SHOW COLUMNS FROM `{$tableName}` WHERE Field = ?", [$details->COLUMN_NAME])[0];
+                $enumValues = str_replace(['enum(', ')', "'"], '', $enumColumn->Type);
+                $enumValuesArray = explode(',', $enumValues);
+
+                $rule .= 'in:' . implode(',', $enumValuesArray);
+                break;
+
+            case 'json':
+                $rule .= 'json';
+                break;
+
+            case 'boolean':
+            case 'tinyint': // Boolean is often stored as tinyint(1)
+                $rule .= 'boolean';
+                break;
+
+            default:
+                $rule .= 'string';
+        }
+
+        return $rule;
+    }
+
+    protected function generateMessagesFromRules($rules)
+    {
+        $messageStrings = [];
+
+        foreach ($rules as $field => $ruleString) {
+            $ruleParts = explode('|', $ruleString);
+
+            foreach ($ruleParts as $rule) {
+                // Extract rule name and parameters
+                [$ruleName, $params] = explode(':', $rule . ':', 2);
+                $value = str_replace('_', ' ', ucfirst($field));
+                // Generate messages for common rule types
+                switch ($ruleName) {
+                    case 'required':
+                        $messageStrings[] = "'{$field}.required' => '" . $value . " is required.'";
+                        break;
+
+                    case 'nullable':
+                        // Nullable typically doesn't need a message
+                        break;
+
+                    case 'string':
+                        $messageStrings[] = "'{$field}.string' => '" . $value . " must be a valid string.'";
+                        break;
+
+                    case 'max':
+                        $params = str_replace(':', '', $ruleName);
+                        $messageStrings[] = "'{$field}.max' => '" . $value . " may not be greater than {$params} characters.'";
+                        break;
+
+                    case 'integer':
+                        $messageStrings[] = "'{$field}.integer' => '" . $value . " must be an integer.'";
+                        break;
+
+                    case 'numeric':
+                        $messageStrings[] = "'{$field}.numeric' => '" . $value . " must be a valid number.'";
+                        break;
+
+                    case 'boolean':
+                        $messageStrings[] = "'{$field}.boolean' => '" . $value . " must be true or false.'";
+                        break;
+
+                    case 'date':
+                        $messageStrings[] = "'{$field}.date' => '" . $value . " must be a valid date.'";
+                        break;
+
+                    case 'date_format':
+                        $messageStrings[] = "'{$field}.date_format' => '" . $value . " must match the format {$params}.'";
+                        break;
+
+                    case 'in':
+                        $values = str_replace(',', ', ', $params);
+                        $messageStrings[] = "'{$field}.in' => '" . $value . " must be one of the following: {$values}.'";
+                        break;
+
+                    case 'json':
+                        $messageStrings[] = "'{$field}.json' => '" . $value . " must be a valid JSON string.'";
+                        break;
+
+                    case 'exists':
+                        $messageStrings[] = "'{$field}.exists' => '" . $value . " must exist in the related table.'";
+                        break;
+
+                    default:
+                        // Generic fallback for other rules
+                        $messageStrings[] = "'{$field}.{$ruleName}' => '" . $value . " validation failed for rule {$ruleName}.'";
+                        break;
+                }
             }
         }
 
-        // Create the request classes with the generated (or empty) rules
-        $this->createRequestClasses($modelName, $rules, $path);
+        // Combine message strings into a single string, separated by newlines
+        return implode(",\n\t", $messageStrings);
     }
 
-    // Helper to check if a column is nullable
-    protected function isColumnNullable($tableName, $columnName)
+
+
+    protected function generateRequest($name, $path)
     {
-        // Get the column information
-        $columnInfo = DB::select(
-            'SELECT COLUMN_NAME, IS_NULLABLE
-                                   FROM INFORMATION_SCHEMA.COLUMNS
-                                   WHERE TABLE_NAME = ? AND COLUMN_NAME = ?',
-            [$tableName, $columnName]
+        $tableName = Str::snake(Str::plural($name));
+        $rulesArray = $this->generateRulesFromTable($tableName);
+        $messages = $this->generateMessagesFromRules($rulesArray);
+
+        // Convert rules array into a formatted string
+        $rules = collect($rulesArray)
+            ->map(fn($rule, $field) => "'{$field}' => '{$rule}',")
+            ->implode("\n\t\t");
+
+        // Create CreateRequest
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'request.stub',
+            'Http/Requests',
+            'CreateRequest.php',
+            [
+                'rules' => $rules,
+                'messages' => $messages,
+                'className' => $name . "CreateRequest"
+            ]
         );
 
-        // Return true if the column is nullable, false otherwise
-        return ! empty($columnInfo) && $columnInfo[0]->IS_NULLABLE === 'YES';
+        // Create UpdateRequest
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'request.stub',
+            'Http/Requests',
+            'UpdateRequest.php',
+            [
+                'rules' => $rules,
+                'messages' => $messages,
+                'className' => $name . "UpdateRequest"
+            ]
+        );
     }
 
-    // Helper to set validation rules by type and nullability
-    protected function getValidationRules($type, $column, $isNullable)
+
+
+    /**
+     * Create a file from a stub.
+     */
+    protected function createFileFromStub($name, $path, $stubFile, $defaultNamespace, $fileSuffix, $additionalReplacements = [])
     {
-        // Adjust the base rule according to whether the field is nullable or not
-        $nullableString = $isNullable ? 'nullable|' : '';
+        // Ensure $additionalReplacements is always an array
+        $additionalReplacements = $additionalReplacements ?? [];
 
-        switch ($type) {
-            case 'string':
-                return $nullableString . 'string|max:255'; // Nullable or required string with max length
-            case 'integer':
-                return $nullableString . 'integer'; // Nullable or required integer
-            case 'boolean':
-                return $nullableString . 'boolean'; // Nullable or required boolean
-                // Add other cases as needed
-            default:
-                return $nullableString . 'string'; // Default to a nullable string
+        // Generate file details
+        $className = basename($name); // Extract class name
+        $namespace = str_replace('/', '\\', trim($path, '/')); // Convert path to namespace
+        $filePath = base_path(trim($path, '/') . '/' . $className . $fileSuffix); // Generate full file path
+
+        $replacements = array_merge([
+            'namespace' => ucfirst($namespace),
+            'className' => $className,
+            'capsName' => ucfirst($className),
+            'pluralName' => Str::plural($className),
+            'name' => strtolower($className),
+            'nameSpaceOfClass' =>  str_replace('/', '\\', trim($name, '/'))
+        ], $additionalReplacements);
+
+        // Ensure the directory exists
+        File::ensureDirectoryExists(dirname($filePath));
+
+        // Resolve stub file path
+        $stubPath = base_path('stubs/' . $stubFile);
+
+        // Check if stub exists
+        if (!File::exists($stubPath)) {
+            $this->error("Stub file not found: $stubPath");
+            return;
         }
-    }
 
-    protected function createRequestClasses($name, $rules, $path)
+        // Read stub content
+        $stubContent = File::get($stubPath);
+        // Replace placeholders dynamically
+        foreach ($replacements as $placeholder => $value) {
+            $search = "{{ {$placeholder} }}";  // Ensure spaces are handled
+            $replace = $value;
+            $stubContent = str_replace($search, $replace, $stubContent);
+        }
+        // Write the processed content to the target file
+        File::put($filePath, $stubContent);
+
+        // Output success message
+        $this->info("File created successfully at: $filePath");
+    }
+    protected function generateRepositoryServiceProvider($providerPath)
     {
-        $this->ensureDirectoryExists($path);
-        $name = basename($name);
-        $createRequestPath = base_path("$path/{$name}CreateRequest.php");
-        $updateRequestPath = base_path("$path/{$name}UpdateRequest.php");
-        $namespace = str_replace('/', '\\', ucwords($path));
-        $capsName = ucfirst($name);
+        // Path to the stub file
+        $stubPath = base_path('app/Console/Commands/stubs/repository-service-provider.stub');
 
-        // Template for CreateRequest class
-        $createRequestTemplate = "<?php\n\nnamespace {$namespace};\n\nuse App\Http\Requests\Api\V1\AbstractRequest;\n\n";
-        $createRequestTemplate .= "class {$capsName}CreateRequest extends AbstractRequest\n{\n\tpublic function rules()\n\t{\n\t\treturn [\n{$rules}\t\t];\n\t}\n}\n";
-
-        // Template for UpdateRequest class
-        $updateRequestTemplate = "<?php\n\nnamespace {$namespace};\n\nuse App\Http\Requests\Api\V1\AbstractRequest;\n\n";
-        $updateRequestTemplate .= "class {$capsName}UpdateRequest extends AbstractRequest\n{\n\tpublic function rules()\n\t{\n\t\treturn [\n{$rules}\t\t];\n\t}\n}\n";
-
-        // Write the request files
-        try {
-            File::put($createRequestPath, $createRequestTemplate);
-            File::put($updateRequestPath, $updateRequestTemplate);
-        } catch (\Exception $e) {
-            throw new \RuntimeException("Failed to create request files in path: $path");
+        // Check if the stub exists
+        if (!File::exists($stubPath)) {
+            $this->error("Stub file not found: $stubPath");
+            return;
         }
+
+        // Read the stub content
+        $stubContent = File::get($stubPath);
+
+        // Replace placeholders in the stub with appropriate values
+        $namespace = 'App\\Providers'; // Namespace for the provider
+        $processedContent = str_replace('{{ namespace }}', $namespace, $stubContent);
+
+        // Ensure the Providers directory exists
+        File::ensureDirectoryExists(app_path('Providers'));
+
+        // Write the processed content to the target file
+        File::put($providerPath, $processedContent);
+
+        $this->info('RepositoryServiceProvider created successfully.');
     }
 
+    /**
+     * Ensure a directory exists.
+     */
     protected function ensureDirectoryExists($path)
     {
         $fullPath = base_path($path);
-        $segments = explode('/', $path);
-        $currentPath = base_path();
 
-        foreach ($segments as $segment) {
-            $currentPath .= '/' . $segment;
-            if (! File::exists($currentPath)) {
-                File::makeDirectory($currentPath, 0755, true);
-                $this->info("Created directory: $currentPath");
-            }
+        if (!File::exists($fullPath)) {
+            File::makeDirectory($fullPath, 0755, true);
+            $this->info("Created directory: $fullPath");
         }
     }
 }
