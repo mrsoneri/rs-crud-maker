@@ -1,5 +1,5 @@
 {
-    "name": "Mr1131/laravel-make-resource",
+    "name": "mrsoneri/laravel-make-resource",
     "description": "A Laravel package to generate resource files (repositories, services, controllers, etc.)",
     "type": "library",
     "require": {
@@ -15,7 +15,7 @@
         "repositories": [
             {
                 "type": "vcs",
-                "url": "https://github.com/mrsoneri/laravel-make-resource"
+                "url": "https://github.com/Mr1131/laravel-make-resource"
             }
         ]
     }
