@@ -1,5 +1,5 @@
 {
-    "name": "mrsoneri/laravel-make-resource",
+    "name": "Mr1131/laravel-make-resource",
     "description": "A Laravel package to generate resource files (repositories, services, controllers, etc.)",
     "type": "library",
     "require": {
