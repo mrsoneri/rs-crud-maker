@@ -11,14 +11,12 @@
             "MrSoneri\\MakeResource\\": "src/"
         }
     },
-    {
-        "repositories": [
-            {
-                "type": "vcs",
-                "url": "https://github.com/Mr1131/laravel-make-resource"
-            }
-        ]
-    }
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Mr1131/laravel-make-resource"
+        }
+    ],
     "extra": {
         "laravel": {
             "providers": [
