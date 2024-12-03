@@ -5,7 +5,7 @@
     "require": {
         "php": "^8.1",
         "laravel/framework": "^10.0",
-        "mrsoneri/laravel-rs-crud-maker": "dev-main"
+        "mrsoneri/laravel-make-resource": "dev-main"
     },
     "autoload": {
         "psr-4": {
@@ -15,7 +15,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/Mr1131/rs-crud-maker"
+            "url": "https://github.com/Mr1131/laravel-make-resource"
         }
     ],
     "minimum-stability": "dev",
