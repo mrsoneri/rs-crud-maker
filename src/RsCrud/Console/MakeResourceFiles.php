@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace RsCrud\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -8,21 +8,21 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class MakeResourceFiles extends Command
+class RsCrudMaker extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'make:resource {name}';
+    protected $signature = 'rscrudmaker:create {name}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create related files for a new resource';
+    protected $description = 'Generate CRUD operations, repository, and service classes pattern for a new resource';
 
     /**
      * Base app path.
@@ -362,8 +362,7 @@ class MakeResourceFiles extends Command
         File::ensureDirectoryExists(dirname($filePath));
 
         // Resolve stub file path
-        $stubPath = base_path('stubs/' . $stubFile);
-
+        $stubPath = __DIR__ . '/../stubs/' . $stubFile; // Replace with the actual path to the stub file in your package{$stubFile}';
         // Check if stub exists
         if (!File::exists($stubPath)) {
             $this->error("Stub file not found: $stubPath");
@@ -387,7 +386,7 @@ class MakeResourceFiles extends Command
     protected function generateRepositoryServiceProvider($providerPath)
     {
         // Path to the stub file
-        $stubPath = base_path('app/Console/Commands/stubs/repository-service-provider.stub');
+        $stubPath =  __DIR__ . '/../stubs/' . 'repository-service-provider.stub';
 
         // Check if the stub exists
         if (!File::exists($stubPath)) {

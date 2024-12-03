@@ -9,12 +9,7 @@ This package provides a command to generate resource files (repositories, servic
    composer require mrsoneri/laravel-make-resource
    ```
 
-2. Publish the configuration file:
-   ```bash
-   php artisan vendor:publish --tag=config
-   ```
-
 3. Use the command:
    ```bash
-   php artisan make:resource ResourceName
+   php artisan rscrudmaker:create ResourceName
    ```

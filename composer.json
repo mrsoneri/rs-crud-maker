@@ -1,23 +1,24 @@
 {
-    "name": "mrsoneri/laravel-make-resource",
-    "description": "A Laravel package to generate resource files (repositories, services, controllers, etc.)",
+    "name": "mrsoneri/rs-crud-maker",
+    "description": "A Laravel package to generate CRUD operations, repository, and service classes for resources",
     "type": "library",
     "require": {
         "php": "^8.1",
-        "laravel/framework": "^10.0"
+        "laravel/framework": "^10.0",
+        "mrsoneri/laravel-rs-crud-maker": "dev-main"
     },
     "autoload": {
         "psr-4": {
-            "MrSoneri\\MakeResource\\": "src/"
+            "RsCrud\\": "src/"
         }
     },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "MrSoneri\\MakeResource\\Providers\\MakeResourceServiceProvider"
-            ]
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Mr1131/rs-crud-maker"
         }
-    },
-    "minimum-stability": "stable",
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "license": "MIT"
 }
