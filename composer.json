@@ -16,7 +16,7 @@
             "providers": [
                 "RsCrud\\Providers\\RsCrudMakerServiceProvider",
                 "App\\Providers\\RepositoryServiceProvider"
-            ],
+            ]
         }
     },
     "repositories": [
