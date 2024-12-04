@@ -14,8 +14,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "RsCrud\\Providers\\RsCrudMakerServiceProvider",
-                "App\\Providers\\RepositoryServiceProvider"
+                "RsCrud\\Providers\\RsCrudMakerServiceProvider"
             ]
         }
     },
