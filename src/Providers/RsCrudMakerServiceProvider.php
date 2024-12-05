@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use RsCrud\Console\RsCrudMaker;
 
-class RepositoryServiceProvider extends ServiceProvider
+class RsCrudMakerServiceProvider extends ServiceProvider
 {
     /**
      * Register the application's services.
@@ -24,7 +24,7 @@ class RepositoryServiceProvider extends ServiceProvider
         // Register the console commands if running in the console
         if ($this->app->runningInConsole()) {
             $this->commands([
-                MakeResourceFiles::class,
+                RsCrudMaker::class,
             ]);
         }
     }
