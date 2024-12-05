@@ -1,5 +1,5 @@
 {
-    "name": "mrsoneri/rs-crud-maker",
+    "name": "mrsoneri/rscrudmaker",
     "description": "A Laravel package to generate CRUD operations, repository, and service classes for resources",
     "type": "library",
     "require": {
@@ -24,6 +24,9 @@
             "url": "https://github.com/Mr1131/rs-crud-maker"
         }
     ],
+    "require": {
+      "mrsoneri/rscrudmaker": "dev-main"
+    }
     "minimum-stability": "dev",
     "prefer-stable": true,
     "license": "MIT"
