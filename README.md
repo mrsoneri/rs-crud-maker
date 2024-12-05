@@ -6,7 +6,7 @@ This package provides a command to generate resource files (repositories, servic
 
 1. Require the package via Composer:
    ```bash
-   composer require mrsoneri/rs-crud-maker
+   composer require mrsoneri/rscrudmaker
    ```
 
 3. Use the command:
