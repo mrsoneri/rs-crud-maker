@@ -3,13 +3,14 @@
 namespace RsCrud\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use RsCrud\Traits\ValidationTrait;
+use Illuminate\Support\Facades\Artisan;
 
 class RsCrudMaker extends Command
 {
+    use ValidationTrait;
     /**
      * The name and signature of the console command.
      *
@@ -39,7 +40,7 @@ class RsCrudMaker extends Command
         // Step 1: Get the 'name' argument
         $name = $this->argument('name');
         $formattedName = $this->formatName($name);
-        $providerPath = app_path('Providers/RepositoryServiceProvider.php');
+        // $providerPath = app_path('Providers/RepositoryServiceProvider.php');
 
         // // Define paths
         $controllerPath = $this->basePath . 'Http/Controllers/' . $formattedName;
@@ -47,6 +48,7 @@ class RsCrudMaker extends Command
         $repositoryPathInterface = $this->basePath . 'Repositories/Contract/' . $formattedName;
         $repository = $this->basePath . 'Repositories/Eloquent/' . $formattedName;
         $requestPath = $this->basePath . 'Http/Requests/' . $formattedName;
+        $resourcePath = $this->basePath . 'Http/Resources/' . $formattedName;
 
         // // Generate files
         $this->generateController($formattedName, $controllerPath);
@@ -54,9 +56,10 @@ class RsCrudMaker extends Command
         $this->generateRepositoryInterface($formattedName, $repositoryPathInterface);
         $this->generateRepository($formattedName, $repository);
         $this->generateRequest($formattedName, $requestPath);
-        if (!File::exists($providerPath)) {
-            $this->generateRepositoryServiceProvider($providerPath);
-        }
+        $this->generateResource($formattedName, $resourcePath);
+        // if (!File::exists($providerPath)) {
+        //     $this->generateRepositoryServiceProvider($providerPath);
+        // }
     }
 
     /**
@@ -118,182 +121,6 @@ class RsCrudMaker extends Command
         );
     }
 
-    protected function generateRulesFromTable($tableName)
-    {
-        if (!Schema::hasTable($tableName)) {
-            $this->error("Table '{$tableName}' does not exist.");
-            return [];
-        }
-
-        $columns = Schema::getColumnListing($tableName);
-        $rules = [];
-
-        foreach ($columns as $column) {
-            // Skip system fields
-            if (in_array($column, ['id', 'created_at', 'updated_at', 'deleted_at'])) {
-                continue;
-            }
-
-            $columnDetails = DB::select(
-                'SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH, COLUMN_DEFAULT 
-                 FROM INFORMATION_SCHEMA.COLUMNS 
-                 WHERE TABLE_NAME = ? AND COLUMN_NAME = ?',
-                [$tableName, $column]
-            );
-
-            if (empty($columnDetails)) {
-                continue;
-            }
-
-            $details = $columnDetails[0];
-            $rules[$column] = $this->mapColumnToValidationRule($details, $tableName); // Pass $tableName explicitly
-        }
-
-        return $rules;
-    }
-
-    protected function mapColumnToValidationRule($details, $tableName)
-    {
-        $type = $details->DATA_TYPE;
-        $isNullable = $details->IS_NULLABLE === 'YES';
-        $maxLength = $details->CHARACTER_MAXIMUM_LENGTH;
-
-        $rule = $isNullable ? 'nullable|' : 'required|';
-
-        switch ($type) {
-            case 'varchar':
-            case 'char':
-            case 'text':
-                $rule .= 'string';
-                if ($maxLength) {
-                    $rule .= "|max:{$maxLength}";
-                }
-                break;
-
-            case 'int':
-            case 'bigint':
-            case 'smallint':
-            case 'mediumint':
-                $rule .= 'integer';
-                break;
-
-            case 'decimal':
-            case 'float':
-            case 'double':
-                $rule .= 'numeric';
-                break;
-
-            case 'date':
-                $rule .= 'date';
-                break;
-
-            case 'datetime':
-            case 'timestamp':
-                $rule .= 'date_format:Y-m-d H:i:s';
-                break;
-
-            case 'enum':
-                // Fetch enum values using SHOW COLUMNS and the passed table name
-                $enumColumn = DB::select("SHOW COLUMNS FROM `{$tableName}` WHERE Field = ?", [$details->COLUMN_NAME])[0];
-                $enumValues = str_replace(['enum(', ')', "'"], '', $enumColumn->Type);
-                $enumValuesArray = explode(',', $enumValues);
-
-                $rule .= 'in:' . implode(',', $enumValuesArray);
-                break;
-
-            case 'json':
-                $rule .= 'json';
-                break;
-
-            case 'boolean':
-            case 'tinyint': // Boolean is often stored as tinyint(1)
-                $rule .= 'boolean';
-                break;
-
-            default:
-                $rule .= 'string';
-        }
-
-        return $rule;
-    }
-
-    protected function generateMessagesFromRules($rules)
-    {
-        $messageStrings = [];
-
-        foreach ($rules as $field => $ruleString) {
-            $ruleParts = explode('|', $ruleString);
-
-            foreach ($ruleParts as $rule) {
-                // Extract rule name and parameters
-                [$ruleName, $params] = explode(':', $rule . ':', 2);
-                $value = str_replace('_', ' ', ucfirst($field));
-                // Generate messages for common rule types
-                switch ($ruleName) {
-                    case 'required':
-                        $messageStrings[] = "'{$field}.required' => '" . $value . " is required.'";
-                        break;
-
-                    case 'nullable':
-                        // Nullable typically doesn't need a message
-                        break;
-
-                    case 'string':
-                        $messageStrings[] = "'{$field}.string' => '" . $value . " must be a valid string.'";
-                        break;
-
-                    case 'max':
-                        $params = str_replace(':', '', $ruleName);
-                        $messageStrings[] = "'{$field}.max' => '" . $value . " may not be greater than {$params} characters.'";
-                        break;
-
-                    case 'integer':
-                        $messageStrings[] = "'{$field}.integer' => '" . $value . " must be an integer.'";
-                        break;
-
-                    case 'numeric':
-                        $messageStrings[] = "'{$field}.numeric' => '" . $value . " must be a valid number.'";
-                        break;
-
-                    case 'boolean':
-                        $messageStrings[] = "'{$field}.boolean' => '" . $value . " must be true or false.'";
-                        break;
-
-                    case 'date':
-                        $messageStrings[] = "'{$field}.date' => '" . $value . " must be a valid date.'";
-                        break;
-
-                    case 'date_format':
-                        $messageStrings[] = "'{$field}.date_format' => '" . $value . " must match the format {$params}.'";
-                        break;
-
-                    case 'in':
-                        $values = str_replace(',', ', ', $params);
-                        $messageStrings[] = "'{$field}.in' => '" . $value . " must be one of the following: {$values}.'";
-                        break;
-
-                    case 'json':
-                        $messageStrings[] = "'{$field}.json' => '" . $value . " must be a valid JSON string.'";
-                        break;
-
-                    case 'exists':
-                        $messageStrings[] = "'{$field}.exists' => '" . $value . " must exist in the related table.'";
-                        break;
-
-                    default:
-                        // Generic fallback for other rules
-                        $messageStrings[] = "'{$field}.{$ruleName}' => '" . $value . " validation failed for rule {$ruleName}.'";
-                        break;
-                }
-            }
-        }
-
-        // Combine message strings into a single string, separated by newlines
-        return implode(",\n\t", $messageStrings);
-    }
-
-
-
     protected function generateRequest($name, $path)
     {
         $tableName = Str::snake(Str::plural($name));
@@ -333,8 +160,6 @@ class RsCrudMaker extends Command
             ]
         );
     }
-
-
 
     /**
      * Create a file from a stub.
@@ -383,32 +208,60 @@ class RsCrudMaker extends Command
         // Output success message
         $this->info("File created successfully at: $filePath");
     }
-    protected function generateRepositoryServiceProvider($providerPath)
+
+    public function generateResource($name,$path)
     {
-        // Path to the stub file
-        $stubPath =  __DIR__ . '/../stubs/' . 'repository-service-provider.stub';
+        // Define the dynamic resource name and path
+        $resourceName = $name . 'ListingResource';
+        $resourceCreateName = $name . 'CreateResource';
+        $resourceUpdateName = $name . 'UpdateResource';
+        $resourcePath = $path;
 
-        // Check if the stub exists
-        if (!File::exists($stubPath)) {
-            $this->error("Stub file not found: $stubPath");
-            return;
-        }
-
-        // Read the stub content
-        $stubContent = File::get($stubPath);
-
-        // Replace placeholders in the stub with appropriate values
-        $namespace = 'App\\Providers'; // Namespace for the provider
-        $processedContent = str_replace('{{ namespace }}', $namespace, $stubContent);
-
-        // Ensure the Providers directory exists
-        File::ensureDirectoryExists(app_path('Providers'));
-
-        // Write the processed content to the target file
-        File::put($providerPath, $processedContent);
-
-        $this->info('RepositoryServiceProvider created successfully.');
+        // Automatically create the dynamic ContactListingResource
+        Artisan::call('make:resource', [
+            'name' => $resourceName,
+            '--path' => $resourcePath,
+        ]);
+        
+        // Automatically create the dynamic ContactCreateResource
+        Artisan::call('make:resource', [
+            'name' => $resourceCreateName,
+            '--path' => $resourcePath,
+        ]);
+        
+        // Automatically create the dynamic ContactUpdateResource
+        Artisan::call('make:resource', [
+            'name' => $resourceUpdateName,
+            '--path' => $resourcePath,
+        ]);
     }
+
+    // protected function generateRepositoryServiceProvider($providerPath)
+    // {
+    //     // Path to the stub file
+    //     $stubPath =  __DIR__ . '/../stubs/' . 'repository-service-provider.stub';
+
+    //     // Check if the stub exists
+    //     if (!File::exists($stubPath)) {
+    //         $this->error("Stub file not found: $stubPath");
+    //         return;
+    //     }
+
+    //     // Read the stub content
+    //     $stubContent = File::get($stubPath);
+
+    //     // Replace placeholders in the stub with appropriate values
+    //     $namespace = 'App\\Providers'; // Namespace for the provider
+    //     $processedContent = str_replace('{{ namespace }}', $namespace, $stubContent);
+
+    //     // Ensure the Providers directory exists
+    //     File::ensureDirectoryExists(app_path('Providers'));
+
+    //     // Write the processed content to the target file
+    //     File::put($providerPath, $processedContent);
+
+    //     $this->info('RepositoryServiceProvider created successfully.');
+    // }
 
     /**
      * Ensure a directory exists.

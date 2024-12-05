@@ -33,7 +33,7 @@ class {{ capsName }}Controller extends Controller
         try {
             $data = $this->{{ name }}Service->create{{ capsName }}($request);
             return $data ? 
-            $this->jsonResponse(true, Response::HTTP_CREATED, $data,[], [], '{{ capsName }} created successfully.') 
+            $this->jsonResponse(true, Response::HTTP_CREATED, $data,[], '{{ capsName }} created successfully.') 
             : $this->jsonResponse(true, Response::HTTP_OK, [], [], 'Failed to create {{ capsName }}.');
         } catch (\Exception $e) {
             return $this->handleException($e);
@@ -45,7 +45,7 @@ class {{ capsName }}Controller extends Controller
         try {
             $data = $this->{{ name }}Service->get{{ capsName }}ById($id);
             return $data ? 
-            $this->jsonResponse(true, Response::HTTP_OK, $data, [], [], '{{ capsName }} details fetched successfully.') 
+            $this->jsonResponse(true, Response::HTTP_OK, $data, [], '{{ capsName }} details fetched successfully.') 
             : $this->jsonResponse(true, Response::HTTP_OK, [], [], '{{ capsName }} not found.');
         } catch (\Exception $e) {
             return $this->handleException($e);

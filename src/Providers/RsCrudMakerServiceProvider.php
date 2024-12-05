@@ -19,7 +19,15 @@ class RepositoryServiceProvider extends ServiceProvider
         ]);
         $this->bindRepositories();
     }
-
+    public function boot()
+    {
+        // Register the console commands if running in the console
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                MakeResourceFiles::class,
+            ]);
+        }
+    }
     /**
      * Automatically bind repositories based on folder structure and naming conventions.
      */
