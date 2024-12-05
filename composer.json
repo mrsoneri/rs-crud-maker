@@ -22,7 +22,7 @@
    "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/Mr1131/rs-crud-maker"
+            "url": "https://github.com/mrsoneri/rs-crud-maker"
         }
     ],
     "minimum-stability": "dev",
