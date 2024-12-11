@@ -25,7 +25,7 @@
             "url": "https://github.com/mrsoneri/rs-crud-maker"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true,
     "license": "MIT"
 }
