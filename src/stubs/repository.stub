@@ -20,18 +20,19 @@ class {{ capsName }}Repository implements {{ capsName }}RepositoryInterface
 
     public function show($id)
     {
-        return {{ capsName }}::findRecord($id);
+        return {{ capsName }}::findOrFail($id);
     }
 
     public function update($id, $request)
     {
-        ${{ name }} = {{ capsName }}::findRecord($id);
-        return ${{ name }}->update($request->validated());
+        ${{ name }} = {{ capsName }}::findOrFail($id);
+        ${{ name }}->update($request->validated());
+        return ${{ name }};
     }
 
     public function delete($id)
     {
-        ${{ name }} = {{ capsName }}::findRecord($id);
+        ${{ name }} = {{ capsName }}::findOrFail($id);
         return ${{ name }}->delete();
     }
 }

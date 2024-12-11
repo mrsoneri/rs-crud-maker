@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\{{ nameSpaceOfClass }}\{{ capsName }}CreateRequest;
 use App\Http\Requests\{{ nameSpaceOfClass }}\{{ capsName }}UpdateRequest;
 use App\Services\{{ nameSpaceOfClass }}\{{ capsName }}Service;
+use App\Http\Resources\{{ nameSpaceOfClass }}\{{ capsName }}CreateResource;
+use App\Http\Resources\{{ nameSpaceOfClass }}\{{ capsName }}ListingResource;
+use App\Http\Resources\{{ nameSpaceOfClass }}\{{ capsName }}ShowResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -20,9 +23,7 @@ class {{ capsName }}Controller extends Controller
         try {
             $data = $this->{{ name }}Service->retrieve{{ pluralName }}($this->request);
 
-            return $data ? 
-            $this->jsonResponse(true, Response::HTTP_OK, $data, [],'{{ capsName }} data loaded successfully.') :
-            $this->jsonResponse(true, Response::HTTP_OK, [], [],'{{ capsName }} data not found.');
+            return {{ capsName }}ListingResource::collection($data);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
@@ -32,9 +33,8 @@ class {{ capsName }}Controller extends Controller
     {
         try {
             $data = $this->{{ name }}Service->create{{ capsName }}($request);
-            return $data ? 
-            $this->jsonResponse(true, Response::HTTP_CREATED, $data,[], '{{ capsName }} created successfully.') 
-            : $this->jsonResponse(true, Response::HTTP_OK, [], [], 'Failed to create {{ capsName }}.');
+
+            return new {{ capsName }}CreateResource($data);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
@@ -44,9 +44,7 @@ class {{ capsName }}Controller extends Controller
     {
         try {
             $data = $this->{{ name }}Service->get{{ capsName }}ById($id);
-            return $data ? 
-            $this->jsonResponse(true, Response::HTTP_OK, $data, [], '{{ capsName }} details fetched successfully.') 
-            : $this->jsonResponse(true, Response::HTTP_OK, [], [], '{{ capsName }} not found.');
+            return new {{ capsName }}ShowResource($data);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
@@ -55,8 +53,8 @@ class {{ capsName }}Controller extends Controller
     public function update({{ capsName }}UpdateRequest $request,string $id)
     {
         try {
-            $success = $this->{{ name }}Service->update{{ capsName }}($id, $request);
-            return $this->jsonResponse($success, Response::HTTP_OK, [], [], $success ? '{{ capsName }} updated successfully.' : '{{ capsName }} not found.');
+            $data = $this->{{ name }}Service->update{{ capsName }}($id, $request);
+            return new {{ capsName }}ShowResource($data);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
@@ -66,7 +64,12 @@ class {{ capsName }}Controller extends Controller
     {
         try {
             $success = $this->{{ name }}Service->delete{{ capsName }}($id);
-            return $this->jsonResponse($success, Response::HTTP_OK, [], [], $success ? '{{ capsName }} deleted successfully.' : '{{ capsName }} not found.');
+            if ($success) {
+                return response()->json([
+                    'success' => true,
+                    'message' => '{{ capsName }} deleted successfully.',
+                ], 200);
+            }
         } catch (\Exception $e) {
             return $this->handleException($e);
         }

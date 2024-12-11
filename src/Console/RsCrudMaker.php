@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RsCrud\Traits\ValidationTrait;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
 
 class RsCrudMaker extends Command
 {
@@ -50,13 +50,14 @@ class RsCrudMaker extends Command
         $requestPath = $this->basePath . 'Http/Requests/' . $formattedName;
         $resourcePath = $this->basePath . 'Http/Resources/' . $formattedName;
 
-        // // Generate files
+        // // // Generate files
         $this->generateController($formattedName, $controllerPath);
         $this->generateService($formattedName, $servicePath);
         $this->generateRepositoryInterface($formattedName, $repositoryPathInterface);
         $this->generateRepository($formattedName, $repository);
         $this->generateRequest($formattedName, $requestPath);
         $this->generateResource($formattedName, $resourcePath);
+        $this->pushRoute($formattedName);
         // if (!File::exists($providerPath)) {
         //     $this->generateRepositoryServiceProvider($providerPath);
         // }
@@ -209,60 +210,118 @@ class RsCrudMaker extends Command
         $this->info("File created successfully at: $filePath");
     }
 
-    public function generateResource($name,$path)
+    public function generateResource($name, $path, $fields = [])
     {
-        // Define the dynamic resource name and path
-        $resourceName = $name . 'ListingResource';
-        $resourceCreateName = $name . 'CreateResource';
-        $resourceUpdateName = $name . 'UpdateResource';
-        $resourcePath = $path;
+        // If fields are not provided, fetch from the database
+        if (empty($fields)) {
+            $tableName = Str::snake(Str::plural($name)); // Infer table name from resource name
+            $fields = Schema::hasTable($tableName) ? Schema::getColumnListing($tableName) : [];
+        }
 
-        // Automatically create the dynamic ContactListingResource
-        Artisan::call('make:resource', [
-            'name' => $resourceName,
-            '--path' => $resourcePath,
-        ]);
-        
-        // Automatically create the dynamic ContactCreateResource
-        Artisan::call('make:resource', [
-            'name' => $resourceCreateName,
-            '--path' => $resourcePath,
-        ]);
-        
-        // Automatically create the dynamic ContactUpdateResource
-        Artisan::call('make:resource', [
-            'name' => $resourceUpdateName,
-            '--path' => $resourcePath,
-        ]);
+        // Define resource names and corresponding actions
+        $resourceTypes = [
+            'Listing' => 'listing',   // For Listing
+            'Create' => 'create',     // For Create
+            'Show' => 'show',     // For Show
+        ];
+
+        // Loop through each resource type (Listing, Create, Show)
+        foreach ($resourceTypes as $resourceType => $action) {
+            // Generate the resource name dynamically based on the action type
+            $resource = $name . $resourceType . 'Resource';
+
+            // Define the target path
+            $targetPath = base_path("{$path}/{$resource}.php");
+
+            // Ensure the target directory exists
+            if (!File::exists($path)) {
+                File::makeDirectory($path, 0755, true);
+            }
+
+            // Generate resource content dynamically with the appropriate action type
+            $content = $this->generateResourceContent($name, $resource, $fields, $action);
+
+            // Write the content to the target file
+            File::put($targetPath, $content);
+        }
     }
 
-    // protected function generateRepositoryServiceProvider($providerPath)
-    // {
-    //     // Path to the stub file
-    //     $stubPath =  __DIR__ . '/../stubs/' . 'repository-service-provider.stub';
+    private function generateResourceContent($name,$resource, $fields, $action = 'listing')
+    {
+        // Map the action to a success message
+        $messageMap = [
+            'listing' => "{$name} retrieved successfully.",
+            'create' => "{$name} created successfully.",
+            'show' => "{$name} fetched successfully.",
+        ];
 
-    //     // Check if the stub exists
-    //     if (!File::exists($stubPath)) {
-    //         $this->error("Stub file not found: $stubPath");
-    //         return;
-    //     }
+        // Set the message dynamically based on the action
+        $message = $messageMap[$action] ?? "{$resource} operation successful.";
 
-    //     // Read the stub content
-    //     $stubContent = File::get($stubPath);
+        // Prepare the fields array for the `toArray` method
+        $fieldsArray = collect($fields)->map(fn($field) => "'$field' => \$this->$field,")->implode("\n        ");
 
-    //     // Replace placeholders in the stub with appropriate values
-    //     $namespace = 'App\\Providers'; // Namespace for the provider
-    //     $processedContent = str_replace('{{ namespace }}', $namespace, $stubContent);
+        // Load the stub file content
+        $stubPath = __DIR__ . '/../stubs/' . 'resource.stub';
+        $stub = file_get_contents($stubPath);
 
-    //     // Ensure the Providers directory exists
-    //     File::ensureDirectoryExists(app_path('Providers'));
+        // Replace the placeholders with dynamic values
+        $content = str_replace(
+            ['{{resource}}', '{{fieldsArray}}', '{{message}}','{{namespace}}'],
+            [$resource, $fieldsArray, $message, $name],
+            $stub
+        );
 
-    //     // Write the processed content to the target file
-    //     File::put($providerPath, $processedContent);
+        return $content;
+    }
+    public function pushRoute($name)
+    {
+        // Ensure the name is in StudlyCase for the controller and snake_case for the route
+        $controllerName = Str::studly($name) . 'Controller';
+        $controllerNamespace = "App\\Http\\Controllers\\{$name}\\{$controllerName}";
+        $routeName = str::plural(Str::snake($name, '-'));
 
-    //     $this->info('RepositoryServiceProvider created successfully.');
-    // }
+        // Path to the api.php file
+        $apiFilePath = base_path('routes/api.php');
 
+        // Read the content of the api.php file
+        $apiFileContent = file_get_contents($apiFilePath);
+
+        // Check if the use statement already exists
+        $useStatement = "use {$controllerNamespace};";
+
+        if (!Str::contains($apiFileContent, $useStatement)) {
+            // Find the last use statement
+            if (preg_match('/^(use\s.+;)/m', $apiFileContent, $matches, PREG_OFFSET_CAPTURE)) {
+                $lastUseStatementPosition = $matches[array_key_last($matches)][1];
+                $insertPosition = $lastUseStatementPosition + strlen($matches[array_key_last($matches)][0]);
+
+                // Insert the use statement after the last use statement
+                $apiFileContent = substr_replace($apiFileContent, PHP_EOL . $useStatement, $insertPosition, 0);
+            } else {
+                // If no use statements exist, add it at the top
+                $apiFileContent = $useStatement . PHP_EOL . $apiFileContent;
+            }
+        }
+
+        // Define the resource route
+        $resourceRoute = "Route::resource('{$routeName}', {$controllerName}::class);";
+
+        // Check if the route already exists
+        if (Str::contains($apiFileContent, $resourceRoute)) {
+            $this->warn("The route for {$controllerName} already exists in api.php.");
+            return;
+        }
+
+        // Append the new route to the end of the file
+        $apiFileContent .= PHP_EOL . $resourceRoute . PHP_EOL;
+
+        // Save the updated content back to the api.php file
+        file_put_contents($apiFilePath, $apiFileContent);
+
+        // Inform the user
+        $this->info("Resource route for {$controllerName} has been added to api.php with its namespace.");
+    }
     /**
      * Ensure a directory exists.
      */
