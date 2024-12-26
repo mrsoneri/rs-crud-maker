@@ -17,5 +17,7 @@
             "name": "Paresh Soneri",
             "email": "soneriparesh435@gmail.com"
         }
-    ]
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }
