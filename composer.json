@@ -5,11 +5,11 @@
     "require": {
         "php": "^8.1",
         "laravel/framework": "^10.0",
-        "mrsoneri/rs-crud-maker": "^1.0"
+        "mrsoneri/rs-crud-maker": "*"
     },
     "autoload": {
         "psr-4": {
-            "RsCrud\\": "src/"
+            "Mrsoneri\\RsCrudMaker\\": "src/"
         }
     },
     "extra": {
