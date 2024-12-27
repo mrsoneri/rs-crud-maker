@@ -1,12 +1,12 @@
 <?php
 
-namespace RsCrud\Providers;
+namespace RSPCrud\Providers;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
-use RsCrud\Console\RsCrudMaker;
+use RSPCrud\Console\RspCrudGeneratorCommand;
 
-class RsCrudMakerServiceProvider extends ServiceProvider
+class RepositoryServiceProvider extends ServiceProvider
 {
     /**
      * Register the application's services.
@@ -15,7 +15,7 @@ class RsCrudMakerServiceProvider extends ServiceProvider
     {
         // Register the command
         $this->commands([
-            RsCrudMaker::class,
+            RspCrudGeneratorCommand::class,
         ]);
         $this->bindRepositories();
     }
@@ -24,7 +24,7 @@ class RsCrudMakerServiceProvider extends ServiceProvider
         // Register the console commands if running in the console
         if ($this->app->runningInConsole()) {
             $this->commands([
-                RsCrudMaker::class,
+                RspCrudGeneratorCommand::class,
             ]);
         }
     }

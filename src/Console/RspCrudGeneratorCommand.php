@@ -1,6 +1,6 @@
 <?php
 
-namespace RsCrud\Console;
+namespace RSPCrud\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use RsCrud\Traits\ValidationTrait;
 use Illuminate\Support\Facades\Schema;
 
-class RsCrudMaker extends Command
+class RspCrudGeneratorCommand extends Command
 {
     use ValidationTrait;
     /**
@@ -16,14 +16,14 @@ class RsCrudMaker extends Command
      *
      * @var string
      */
-    protected $signature = 'rscrudmaker:create {name}';
+    protected $signature = 'make:rsp-crud {Resource}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Generate CRUD operations, repository, and service classes pattern for a new resource';
+    protected $description = 'Designed to automatically generate CRUD operations for API resources. The package follows the Repository and Service design patterns to ensure clean, maintainable, and scalable code. With just a single command, this package creates controllers, requests, resources, services, and repositories, setting up the structure for easy management of your application.';
 
     /**
      * Base app path.
@@ -162,6 +162,65 @@ class RsCrudMaker extends Command
         );
     }
 
+    protected function generateResource($name, $path,$fields = [])
+    {
+        if (empty($fields)) {
+            $tableName = Str::snake(Str::plural($name)); // Infer table name from resource name
+            $fields = Schema::hasTable($tableName) ? Schema::getColumnListing($tableName) : [];
+            $fieldsArray = collect($fields)->map(fn($field) => "'$field' => \$this->$field,")->implode("\n        ");
+        }
+        $messageMap = [
+            'listing' => "{$name} retrieved successfully.",
+            'create' => "{$name} created successfully.",
+            'show' => "{$name} fetched successfully.",
+        ];
+
+        // Lisiting Resource
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'resource.stub',
+            'Http/Resources',
+            'CreateRequest.php',
+            [
+                'resource' => $name .'ListingResource',
+                'fieldsArray' => $fieldsArray,
+                'messages' => $messageMap['listing'],
+                'className' => $name . "CreateRequest"
+            ]
+        );
+
+        // Create Resource
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'resource.stub',
+            'Http/Resources',
+            'UpdateRequest.php',
+            [
+                'resource' => $name .'CreateResource',
+                'fieldsArray' => $fieldsArray,
+                'messages' => $messageMap['create'],
+                'className' => $name . "UpdateRequest"
+            ]
+        );
+
+        // Show Resource
+        $this->createFileFromStub(
+            $name,
+            $path,
+            'resource.stub',
+            'Http/Resources',
+            'UpdateRequest.php',
+            [
+                'resource' => $name .'ShowResource',
+                'fieldsArray' => $fieldsArray,
+                'messages' => $messageMap['show'],
+                'className' => $name . "UpdateRequest"
+            ]
+        );
+    }
+
     /**
      * Create a file from a stub.
      */
@@ -210,70 +269,6 @@ class RsCrudMaker extends Command
         $this->info("File created successfully at: $filePath");
     }
 
-    public function generateResource($name, $path, $fields = [])
-    {
-        // If fields are not provided, fetch from the database
-        if (empty($fields)) {
-            $tableName = Str::snake(Str::plural($name)); // Infer table name from resource name
-            $fields = Schema::hasTable($tableName) ? Schema::getColumnListing($tableName) : [];
-        }
-
-        // Define resource names and corresponding actions
-        $resourceTypes = [
-            'Listing' => 'listing',   // For Listing
-            'Create' => 'create',     // For Create
-            'Show' => 'show',     // For Show
-        ];
-
-        // Loop through each resource type (Listing, Create, Show)
-        foreach ($resourceTypes as $resourceType => $action) {
-            // Generate the resource name dynamically based on the action type
-            $resource = $name . $resourceType . 'Resource';
-
-            // Define the target path
-            $targetPath = base_path("{$path}/{$resource}.php");
-
-            // Ensure the target directory exists
-            if (!File::exists($path)) {
-                File::makeDirectory($path, 0755, true);
-            }
-
-            // Generate resource content dynamically with the appropriate action type
-            $content = $this->generateResourceContent($name, $resource, $fields, $action);
-
-            // Write the content to the target file
-            File::put($targetPath, $content);
-        }
-    }
-
-    private function generateResourceContent($name,$resource, $fields, $action = 'listing')
-    {
-        // Map the action to a success message
-        $messageMap = [
-            'listing' => "{$name} retrieved successfully.",
-            'create' => "{$name} created successfully.",
-            'show' => "{$name} fetched successfully.",
-        ];
-
-        // Set the message dynamically based on the action
-        $message = $messageMap[$action] ?? "{$resource} operation successful.";
-
-        // Prepare the fields array for the `toArray` method
-        $fieldsArray = collect($fields)->map(fn($field) => "'$field' => \$this->$field,")->implode("\n        ");
-
-        // Load the stub file content
-        $stubPath = __DIR__ . '/../stubs/' . 'resource.stub';
-        $stub = file_get_contents($stubPath);
-
-        // Replace the placeholders with dynamic values
-        $content = str_replace(
-            ['{{resource}}', '{{fieldsArray}}', '{{message}}','{{namespace}}'],
-            [$resource, $fieldsArray, $message, $name],
-            $stub
-        );
-
-        return $content;
-    }
     public function pushRoute($name)
     {
         // Ensure the name is in StudlyCase for the controller and snake_case for the route
