@@ -1,6 +1,6 @@
 # RS CRUD Maker
 
-`paresh/rsp-crud-generator` is a Laravel package designed to automatically generate CRUD operations for API resources. It adheres to the Repository and Service design patterns to promote clean, maintainable, and scalable code.
+`pareshsoneri/rsp-crud-generator` is a Laravel package designed to automatically generate CRUD operations for API resources. It adheres to the Repository and Service design patterns to promote clean, maintainable, and scalable code.
 
 With a single command, this package sets up controllers, requests, resources, services, and repositories, enabling efficient management of your application's architecture.You only need to register my provider, as it automatically binds your repository.
 
@@ -12,7 +12,7 @@ With a single command, this package sets up controllers, requests, resources, se
 Run the following command to install the package via Composer:
 
 ```bash
-composer require paresh/rsp-crud-generator:dev-main
+composer require pareshsoneri/rsp-crud-generator:dev-main
 ```
 
 ### Step 2: Add the Service Provider

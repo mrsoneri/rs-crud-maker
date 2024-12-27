@@ -1,5 +1,5 @@
 {
-    "name": "paresh/rsp-crud-generator",
+    "name": "pareshsoneri/rsp-crud-generator",
     "description": "A Laravel package to generate API CRUD operations using the Repository-Service Pattern.",
     "type": "library",
     "require": {
