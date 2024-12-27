@@ -162,12 +162,12 @@ class RspCrudGeneratorCommand extends Command
         );
     }
 
-    protected function generateResource($name, $path,$fields = [])
+    protected function generateResource($name, $path, $fields = [])
     {
         if (empty($fields)) {
             $tableName = Str::snake(Str::plural($name)); // Infer table name from resource name
             $fields = Schema::hasTable($tableName) ? Schema::getColumnListing($tableName) : [];
-            $fieldsArray = collect($fields)->map(fn($field) => "'$field' => \$this->$field,")->implode("\n        ");
+            $fieldsArray = collect($fields)->map(fn ($field) => "'$field' => \$this->$field,")->implode("\n        ");
         }
         $messageMap = [
             'listing' => "{$name} retrieved successfully.",
@@ -181,12 +181,11 @@ class RspCrudGeneratorCommand extends Command
             $path,
             'resource.stub',
             'Http/Resources',
-            'CreateRequest.php',
+            'ListingResource.php',
             [
-                'resource' => $name .'ListingResource',
                 'fieldsArray' => $fieldsArray,
-                'messages' => $messageMap['listing'],
-                'className' => $name . "CreateRequest"
+                'message' => $messageMap['listing'],
+                'className' => basename($name).'ListingResource',
             ]
         );
 
@@ -196,12 +195,11 @@ class RspCrudGeneratorCommand extends Command
             $path,
             'resource.stub',
             'Http/Resources',
-            'UpdateRequest.php',
+            'CreateResource.php',
             [
-                'resource' => $name .'CreateResource',
                 'fieldsArray' => $fieldsArray,
-                'messages' => $messageMap['create'],
-                'className' => $name . "UpdateRequest"
+                'message' => $messageMap['create'],
+                'className' => basename($name).'CreateResource',
             ]
         );
 
@@ -211,12 +209,11 @@ class RspCrudGeneratorCommand extends Command
             $path,
             'resource.stub',
             'Http/Resources',
-            'UpdateRequest.php',
+            'ShowResource.php',
             [
-                'resource' => $name .'ShowResource',
                 'fieldsArray' => $fieldsArray,
-                'messages' => $messageMap['show'],
-                'className' => $name . "UpdateRequest"
+                'message' => $messageMap['show'],
+                'className' => basename($name).'ShowResource',
             ]
         );
     }
