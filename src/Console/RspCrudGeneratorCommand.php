@@ -16,7 +16,7 @@ class RspCrudGeneratorCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'make:rsp-crud {Resource}';
+    protected $signature = 'make:rsp-crud {name}';
 
     /**
      * The console command description.

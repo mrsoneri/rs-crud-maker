@@ -84,6 +84,9 @@ When you run the command `php artisan make:rsp-crud User`, the package inspects 
 ### Request Data Generation
 The command automatically generates a `{Resource}Request.php` file containing validation rules for `create` and `update` operations. These rules are dynamically created based on the fields in the database table.
 
+### Route Generation
+The command automatically generates the route and adds it to the api.php file, like this: Route::resource('users', UserController::class);.
+
 #### Example: UserRequest.php
 ```php
 <?php
